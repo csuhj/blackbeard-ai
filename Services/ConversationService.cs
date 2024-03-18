@@ -20,9 +20,9 @@ namespace blackbeard.Services
             this.logger = logger;
             this.connectionToConversationMap = new Dictionary<string, Conversation>();
 
-            this.conversationHubMediator.ClientConnected += OnClientConnected;
-            this.conversationHubMediator.ClientDisconnected += OnClientDisconnected;
-            this.conversationHubMediator.NewMessage += OnNewMessage;
+            this.conversationHubMediator.RegisterClientConnected(OnClientConnected);
+            this.conversationHubMediator.RegisterClientDisconnected(OnClientDisconnected);
+            this.conversationHubMediator.RegisterNewMessage(OnNewMessage);
         }
 
         public void Initialise(string openAiApiKey, string modelName)
@@ -35,29 +35,31 @@ namespace blackbeard.Services
 
         public void Dispose()
         {
-            this.conversationHubMediator.ClientConnected -= OnClientConnected;
-            this.conversationHubMediator.ClientDisconnected -= OnClientDisconnected;
-            this.conversationHubMediator.NewMessage -= OnNewMessage;
+            this.conversationHubMediator.DeregisterClientConnected(OnClientConnected);
+            this.conversationHubMediator.DeregisterClientDisconnected(OnClientDisconnected);
+            this.conversationHubMediator.DeregisterNewMessage(OnNewMessage);
         }
 
-        private void OnClientConnected(object? sender, ConnectionEventArgs e)
+        private Task OnClientConnected(ConnectionEventArgs e)
         {
             logger.LogInformation($"Connected {e.ConnectionId}");
             if (client == null || modelName == null)
                 throw new Exception("ConversationService not initialised properly: null client or modelName");
 
             connectionToConversationMap[e.ConnectionId] = new Conversation(client, modelName);
+            return Task.CompletedTask;
         }
 
-        private void OnClientDisconnected(object? sender, ConnectionEventArgs e)
+        private Task OnClientDisconnected(ConnectionEventArgs e)
         {
             logger.LogInformation($"Disconnected {e.ConnectionId}");
             connectionToConversationMap.Remove(e.ConnectionId);
+            return Task.CompletedTask;
         }
 
-        private void OnNewMessage(object? sender, MessageEventArgs e)
+        private async Task OnNewMessage(MessageEventArgs e)
         {
-            ConversationHub.Reply(conversationHubContext, e.Username, e.Message);
+            await ConversationHub.Reply(conversationHubContext, e.Username, e.Message);
             logger.LogInformation($"New Message {e.ConnectionId}");
 
             if (!connectionToConversationMap.TryGetValue(e.ConnectionId, out Conversation? conversation))
@@ -67,7 +69,7 @@ namespace blackbeard.Services
             }
 
             string response = conversation.SendPrompt(e.Message).GetAwaiter().GetResult();
-            ConversationHub.Reply(conversationHubContext, "Blackbeard", response);
+            await ConversationHub.Reply(conversationHubContext, "Blackbeard", response);
         }
     }
 }

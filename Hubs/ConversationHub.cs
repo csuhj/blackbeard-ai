@@ -11,10 +11,9 @@ namespace blackbeard.Hubs
             this.conversationHubMediator = conversationHubMediator;
         }
 
-        public Task NewMessage(string username, string message)
+        public async Task NewMessage(string username, string message)
         {
-            conversationHubMediator.FireNewMessage(Context.ConnectionId, username, message);
-            return Task.CompletedTask;
+            await conversationHubMediator.FireNewMessage(Context.ConnectionId, username, message);
         }
 
         public static async Task Reply(IHubContext<ConversationHub> hubContext, string username, string message)
@@ -22,16 +21,16 @@ namespace blackbeard.Hubs
             await hubContext.Clients.All.SendAsync("messageReceived", username, message);
         }
 
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
-            conversationHubMediator.FireClientConnected(Context.ConnectionId);
-            return base.OnConnectedAsync();
+            await conversationHubMediator.FireClientConnected(Context.ConnectionId);
+            await base.OnConnectedAsync();
         }
 
-        public override Task OnDisconnectedAsync(Exception? exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            conversationHubMediator.FireClientDisconnected(Context.ConnectionId);
-            return base.OnDisconnectedAsync(exception);
+            await conversationHubMediator.FireClientDisconnected(Context.ConnectionId);
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }
