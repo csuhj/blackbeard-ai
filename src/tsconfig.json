@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+      "outDir": "../js-dist/",
+      "sourceMap": true,
+      "target": "es5",
+    },
+  }
