@@ -16,15 +16,23 @@ namespace blackbeard.Services
       messagesSoFar = CreateInitialMessages();
     }
 
-    public async Task<string> SendPrompt(string prompt)
+    public async Task SendPrompt(string prompt, Func<string, bool, Task> processResponsePart)
     {
       messagesSoFar.Add(new ChatRequestUserMessage(prompt));
 
-      Response<ChatCompletions> response = await client.GetChatCompletionsAsync(new ChatCompletionsOptions(modelName, messagesSoFar));
-      ChatResponseMessage responseMessage = response.Value.Choices[0].Message;
-      messagesSoFar.Add(new ChatRequestAssistantMessage(responseMessage.Content));
+      StreamingResponse<StreamingChatCompletionsUpdate> response = await client.GetChatCompletionsStreamingAsync(new ChatCompletionsOptions(modelName, messagesSoFar));
+      string message = "";
+      bool firstMessagePart = true;
+      await foreach (var x in response)
+      {
+        if (x.ContentUpdate == null)
+          break;
 
-      return responseMessage.Content;
+        await processResponsePart(x.ContentUpdate, firstMessagePart);
+        message += x.ContentUpdate;
+        firstMessagePart = false;
+      }
+      messagesSoFar.Add(new ChatRequestAssistantMessage(message));
     }
 
     private List<ChatRequestMessage> CreateInitialMessages()

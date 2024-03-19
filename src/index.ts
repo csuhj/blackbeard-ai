@@ -10,12 +10,16 @@ const connection = new signalR.HubConnectionBuilder()
     .withUrl("/hub")
     .build();
 
-connection.on("messageReceived", (username: string, message: string) => {
-  const m = document.createElement("div");
-
-  m.innerHTML = `<div class="message-author">${username}</div><div>${message}</div>`;
-
-  divMessages.appendChild(m);
+connection.on("messageReceived", (username: string, messagePart: string, isNewMessage: boolean) => {
+  if (isNewMessage) {
+    const m = document.createElement("div");
+    m.innerHTML = `<div class="message-author">${username}</div><div>${messagePart}</div>`;
+    divMessages.appendChild(m);
+  } else {
+    const m = divMessages.children.item(divMessages.children.length - 1);
+    const currentMessage = m.children.item(1);
+    currentMessage.innerHTML = currentMessage.innerHTML + messagePart;
+  }
   divMessages.scrollTop = divMessages.scrollHeight;
 });
 

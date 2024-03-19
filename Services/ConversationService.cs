@@ -68,8 +68,12 @@ namespace blackbeard.Services
                 return;
             }
 
-            string response = conversation.SendPrompt(e.Message).GetAwaiter().GetResult();
-            await ConversationHub.Reply(conversationHubContext, "Blackbeard", response);
+            await conversation.SendPrompt(e.Message, ProcessResponsePart);
+        }
+
+        private async Task ProcessResponsePart(string messagePart, bool isNewMessage)
+        {
+            await ConversationHub.ReplyPart(conversationHubContext, "Blackbeard", messagePart, isNewMessage);
         }
     }
 }

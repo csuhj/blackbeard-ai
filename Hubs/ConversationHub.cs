@@ -18,7 +18,12 @@ namespace blackbeard.Hubs
 
         public static async Task Reply(IHubContext<ConversationHub> hubContext, string username, string message)
         {
-            await hubContext.Clients.All.SendAsync("messageReceived", username, message);
+            await hubContext.Clients.All.SendAsync("messageReceived", username, message, true);
+        }
+
+        public static async Task ReplyPart(IHubContext<ConversationHub> hubContext, string username, string messagePart, bool isNewMessage)
+        {
+            await hubContext.Clients.All.SendAsync("messageReceived", username, messagePart, isNewMessage);
         }
 
         public override async Task OnConnectedAsync()
